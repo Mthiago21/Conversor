@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conversor de Excel / CSV</title>
+<style>
+:root{--black:#0b0b0d;--ink:#17171a;--red:#e11d2e;--red-dark:#b4121f;--red-soft:#fdecee;--paper:#f6f4f2;--line:#e4dfdb;--muted:#6a6560;font-family:"Segoe UI",Arial,Helvetica,sans-serif;color:var(--ink)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--paper);overflow:hidden}
+/* palco 16:9 (1280x720) ajustado à tela por escala */
+.stage{position:absolute;left:0;top:0;width:1280px;height:720px;transform-origin:0 0;background:var(--paper);display:flex;flex-direction:column;overflow:hidden}
+header.top{position:relative;flex:none;height:92px;background:radial-gradient(900px 260px at 85% 0,#2a0b10 0,var(--black) 65%);color:#fff;display:flex;align-items:center;gap:28px;padding:0 28px;overflow:hidden}
+.brand{display:flex;align-items:center;gap:14px;font-weight:800;font-size:22px;line-height:1.1;white-space:nowrap}
+.brand small{display:block;color:#ff8a94;font-weight:600;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;margin-top:3px}
+.htext{position:relative;z-index:2;border-left:1px solid #3a1c21;padding-left:28px}
+h1{font-size:26px;line-height:1.1;margin:0 0 5px;font-weight:800;letter-spacing:-.5px}
+h1 em{font-family:Georgia,"Times New Roman",serif;font-weight:400;color:var(--red)}
+.htext p{margin:0;color:#b9b3ae;font-size:12.5px}
+.hwave{position:absolute;right:-30px;top:-40px;height:190px;width:auto;z-index:1;pointer-events:none}
+.brand{position:relative;z-index:2}
+main{flex:1;min-height:0;display:grid;grid-template-columns:340px 1fr;gap:14px;padding:14px 20px 8px}
+.col{display:flex;flex-direction:column;gap:10px;min-height:0;min-width:0}
+.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:0 6px 20px #0b0b0d0d;min-width:0}
+.panel h2{font-size:14px;margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.panel h2 i{font-style:normal;min-width:24px;height:24px;border-radius:7px;background:var(--black);color:#ff5565;font:800 10px/24px "Segoe UI",Arial,sans-serif;text-align:center}
+.drop{border:2px dashed #cdb9bb;border-radius:12px;padding:10px 10px 12px;text-align:center;background:#fffafa;cursor:pointer;transition:.2s}
+.drop:hover{border-color:var(--red)}.drop.drag{border-color:var(--red);background:var(--red-soft)}
+.drop strong{display:block;font-size:13.5px;margin:4px 0 0}.drop span{font-size:12px;color:var(--muted)}
+.drop .upicon{width:30px;height:30px;border-radius:50%;background:var(--black);color:#fff;display:inline-flex;align-items:center;justify-content:center}
+input[type=file]{display:none}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.drop .actions{margin-top:6px}
+button,.filebtn{border:0;border-radius:999px;padding:9px 14px;font-weight:700;cursor:pointer;font-size:12.5px;transition:.2s}
+.primary{background:var(--red);color:#fff}.primary:hover:not(:disabled){background:var(--red-dark)}
+.secondary,.filebtn{background:var(--black);color:#fff}.secondary:hover:not(:disabled),.filebtn:hover{background:#2b2b30}
+button:disabled{opacity:.4;cursor:not-allowed}
+.settings{display:grid;gap:7px}
+label{font-size:12px;color:#2b2b30;display:block;font-weight:600}
+select{width:100%;padding:6px 9px;margin-top:3px;border:1px solid #d6d0cb;border-radius:9px;background:#fff;font-size:12.5px}
+select:focus{outline:2px solid var(--red);outline-offset:1px}
+.status{padding:7px 10px;border-radius:10px;background:#f1eeec;color:#3a3633;margin-top:8px;font-size:11px;line-height:1.35;border-left:4px solid #8a8480;overflow-wrap:anywhere}
+.status.good{background:#eef8f1;color:#17643a;border-left-color:#1f9d55}.status.bad{background:var(--red-soft);color:#9a1a26;border-left-color:var(--red)}
+.leftscroll{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column}
+.thead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}.thead h2{margin:0;white-space:nowrap}
+.thead .pills{margin:0;justify-content:flex-end}
+#report{margin:0 0 8px;flex:none}
+/* opções */
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pillbtn{background:#fff;color:var(--ink);border:1.5px solid var(--line);border-radius:999px;padding:6px 14px;font-size:12px;font-weight:600}
+.pillbtn:hover{border-color:var(--red);color:var(--red-dark)}
+.pillbtn.on,.pillbtn.on:hover{background:var(--black);border-color:var(--black);color:#fff}
+.optgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.check{display:flex;cursor:pointer;background:#fff;border:1.5px solid var(--line);border-radius:12px;transition:border-color .15s,background .15s,transform .15s,box-shadow .15s}
+.check:hover{border-color:#bdb5ae;transform:translateY(-1px);box-shadow:0 6px 16px #0b0b0d14}
+.check:has(input:checked){border-color:var(--red);background:#fff6f7}
+.check.opt{position:relative;align-items:flex-start;gap:10px;padding:11px 12px;min-height:96px}
+.check.opt[hidden]{display:none}
+.check.opt input{position:absolute;top:9px;right:9px}
+input[type=checkbox]{-webkit-appearance:none;appearance:none;flex:none;width:18px;height:18px;margin:0;border:2px solid #aaa29b;border-radius:5px;background:#fff center/11px no-repeat;cursor:pointer;transition:.15s}
+input[type=checkbox]:hover{border-color:var(--red)}
+input[type=checkbox]:checked{background-color:var(--red);border-color:var(--red);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 7.5l3 3 6-7'/%3E%3C/svg%3E")}
+.oicon{flex:none;width:36px;height:36px;border-radius:10px;background:#f1eeec;color:var(--black);display:inline-flex;align-items:center;justify-content:center;transition:.15s}
+.oicon svg{width:19px;height:19px}
+.check.opt:has(input:checked) .oicon{background:var(--red);color:#fff}
+.otxt{padding-right:20px}.otxt b{display:block;font-size:12.5px;font-weight:700;margin-bottom:3px;line-height:1.25}
+.otxt small{display:block;font-size:10.5px;line-height:1.35;color:var(--muted)}
+#phoneColsBox{margin-top:8px}#phoneColsBox>small{font-size:11px}
+#phoneCols{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;max-height:34px;overflow:auto;padding:5px 8px;border:1px solid var(--line);border-radius:9px;background:#faf8f7}
+.chip{display:inline-flex;align-items:center;padding:3px 9px;border:1.5px solid var(--line);border-radius:7px;background:#fff;font-size:10.5px;font-weight:600;color:#3a3633;cursor:pointer;user-select:none}
+.chip:hover{border-color:var(--red)}.chip input{display:none}
+.chip:has(input:checked){background:var(--black);border-color:var(--black);color:#fff;box-shadow:inset 3px 0 0 var(--red)}
+/* prévia */
+.prev{flex:1;min-height:0;display:flex;flex-direction:column}
+.prevhead{display:flex;align-items:center;gap:12px;margin-bottom:8px}.prevhead h2{margin:0}
+.metrics{display:flex;gap:8px;flex-wrap:nowrap;margin-left:auto}
+.metric{background:var(--black);color:#fff;padding:4px 12px;border-radius:9px;display:flex;align-items:baseline;gap:7px;white-space:nowrap}
+.metric b{font-size:14px;color:#fff;display:inline}.metric small{color:#ff9aa3;font-size:10.5px}
+.tablewrap{flex:1;min-height:0;overflow:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:max-content;min-width:100%;font-size:11px;white-space:pre-wrap}
+th,td{padding:5px 9px;border-bottom:1px solid #eee9e5;text-align:left;vertical-align:top;min-width:100px;max-width:240px;overflow-wrap:break-word}
+th{position:sticky;top:0;background:var(--black);color:#fff}tr:nth-child(even) td{background:#faf8f7}
+small{color:var(--muted)}
+footer.bar{flex:none;height:28px;background:var(--black);color:#a39d98;font-size:11px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-top:2px solid var(--red)}
+/* telas estreitas: volta ao fluxo com rolagem */
+@media(max-width:900px){
+ html,body{overflow:auto;height:auto;background:var(--paper)}
+ .stage{position:static;width:auto;height:auto;transform:none!important;overflow:visible}
+ header.top{height:auto;flex-wrap:wrap;padding:16px;gap:12px}.htext{border:0;padding:0}
+ main{grid-template-columns:1fr;padding:12px}.optgrid{grid-template-columns:1fr}
+ .metrics{flex-wrap:wrap}.tablewrap{max-height:320px;flex:none}footer.bar{height:auto;padding:10px 16px;flex-direction:column;gap:2px}
+}
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+<header class="top">
+<svg class="hwave" viewBox="0 0 760 460" fill="none" aria-hidden="true"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4b5c"/><stop offset="1" stop-color="#8f0f1b"/></linearGradient><linearGradient id="g2" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#e11d2e"/><stop offset="1" stop-color="#3a0a10"/></linearGradient></defs><path d="M0 400C140 120 360 20 560 70C660 96 730 150 760 190C640 150 520 160 400 250C290 330 150 430 0 400Z" fill="url(#g1)" opacity=".95"/><path d="M60 440C200 200 400 110 600 140C690 154 740 200 760 240C650 215 540 240 430 320C330 390 190 470 60 440Z" fill="url(#g2)" opacity=".9"/></svg>
+<div class="brand"><svg width="44" height="44" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="12" fill="#e11d2e"/><rect x="10" y="9" width="28" height="30" rx="4" fill="#fff"/><rect x="10" y="9" width="28" height="8" rx="4" fill="#0b0b0d"/><path d="M10 17h28M10 25h28M10 33h28M19.5 17v22M28.5 17v22" stroke="#0b0b0d" stroke-width="1.6" fill="none" opacity=".35"/><path d="M14 11.5l5 3.2M19 11.5l-5 3.2" stroke="#e11d2e" stroke-width="2" stroke-linecap="round"/></svg><div>Conversor de Excel / CSV<small>Limpeza e conversão</small></div></div>
+</header>
+<main>
+<div class="col">
+<section class="panel" id="upload">
+<h2><i>01</i>Arquivo de origem</h2>
+<div class="drop" id="drop">
+<span class="upicon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg></span>
+<strong>Arraste seu CSV para cá</strong>
+<span>ou selecione (.csv ou .txt)</span>
+<div class="actions" style="justify-content:center"><label class="filebtn" for="file">Selecionar arquivo</label></div>
+<input id="file" type="file" accept=".csv,.txt,text/csv,text/plain">
+</div>
+<div id="status" class="status">Nenhum arquivo carregado.</div>
+</section>
+<section class="panel leftscroll">
+<h2><i>02</i>Separador e saída</h2>
+<div class="settings">
+<div><label for="inputSep">Separador do arquivo original</label><select id="inputSep"><option value="auto">Detectar automaticamente</option><option value=";">Ponto e vírgula (;)</option><option value=",">Vírgula (,)</option><option value="	">Tabulação</option><option value="|">Barra vertical (|)</option></select></div>
+<div><label for="outputSep">Separador do arquivo final</label><select id="outputSep"><option value=";">Ponto e vírgula (;)</option><option value=",">Vírgula (,)</option><option value="	">Tabulação</option></select></div>
+<div><label for="encoding">Codificação de saída</label><select id="encoding"><option value="utf8bom">UTF-8 com BOM (recomendado)</option><option value="utf8">UTF-8</option></select></div>
+</div>
+<div class="actions">
+<button class="primary" id="convert" disabled>Converter e baixar CSV</button>
+<button class="secondary" id="preview" disabled>Atualizar prévia</button>
+</div>
+</section>
+</div>
+<div class="col">
+<section class="panel">
+<div class="thead"><h2><i>03</i>Tratamento dos dados</h2>
+<div class="pills" id="pills" role="tablist" aria-label="Categorias de opções">
+<button type="button" class="pillbtn on" data-f="all">Todas</button>
+<button type="button" class="pillbtn" data-f="texto">Texto e caracteres</button>
+<button type="button" class="pillbtn" data-f="campos">Telefones e campos</button>
+<button type="button" class="pillbtn" data-f="visual">Visualização</button>
+</div></div>
+<div class="optgrid">
+<label class="check opt" data-cat="texto"><input id="entities" type="checkbox" checked><span class="oicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/></svg></span><span class="otxt"><b>Converter entidades HTML</b><small>Corrige acentos em código (Ol&amp;aacute; → Olá).</small></span></label>
+<label class="check opt" data-cat="texto"><input id="clean" type="checkbox" checked><span class="oicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z"/></svg></span><span class="otxt"><b>Limpeza segura de caracteres</b><small>Remove caracteres invisíveis e espaços especiais.</small></span></label>
+<label class="check opt" data-cat="texto"><input id="strict" type="checkbox"><span class="oicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 7.6-8 9-4.8-1.4-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></span><span class="otxt"><b>Compatibilidade ampliada</b><small>Remove emojis e alfabetos não latinos.</small></span></label>
+<label class="check opt" data-cat="campos"><input id="strip55" type="checkbox"><span class="oicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z"/></svg></span><span class="otxt"><b>Remover o 55 dos telefones</b><small>Tira o 55 do início do telefone.</small></span></label>
+<label class="check opt" data-cat="campos"><input id="trim" type="checkbox"><span class="oicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 18h16M8 12h8"/><path d="M4 10v4M20 10v4"/></svg></span><span class="otxt"><b>Remover espaços nas pontas</b><small>Apaga espaços no início e no fim.</small></span></label>
+<label class="check opt" data-cat="visual"><input id="header" type="checkbox"><span class="oicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg></span><span class="otxt"><b>Primeira linha é cabeçalho</b><small>Destaca o cabeçalho na prévia.</small></span></label>
+</div>
+<div id="phoneColsBox" style="display:none"><small>Colunas de telefone:</small><div id="phoneCols"></div></div>
+</section>
+<section class="panel prev">
+<div class="prevhead"><h2><i>04</i>Prévia</h2><div id="metrics" class="metrics"><small>Carregue um arquivo para visualizar os dados.</small></div></div>
+<div id="report" class="status" style="display:none"></div>
+<div class="tablewrap"><table id="table"></table></div>
+</section>
+</div>
+</main>
+<footer class="bar"><span>Conversor de Excel / CSV &middot; processamento local, nenhum dado sai do seu computador</span><span>Faça uma importação de teste no sistema de destino.</span></footer>
+</div>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+let sourceRows = null, fileName = "arquivo", detectedSep = ";", originalText = "";
+const setStatus = (msg, type="") => { $("status").textContent=msg; $("status").className="status "+type; };
+function decode(buffer){
+  try { return {text:new TextDecoder("utf-8",{fatal:true}).decode(buffer),encoding:"UTF-8"}; }
+  catch(e){ return {text:new TextDecoder("windows-1252").decode(buffer),encoding:"Windows-1252"}; }
+}
+function detectDelimiter(text){
+  const candidates=["; ", ";", ",", "\t", "|"];
+  const sample=text.split(/\r\n|\n|\r/).slice(0,12);
+  let best=";", bestScore=-1;
+  for(const d of candidates){
+    let counts=sample.map(line=>{let q=false,n=0;for(let i=0;i<line.length;i++){if(line[i]=='"'){if(q&&line[i+1]=='"'){i++;}else q=!q;}else if(line[i]===d&&!q)n++;}return n;});
+    const nonzero=counts.filter(x=>x>0);
+    if(nonzero.length){const avg=nonzero.reduce((a,b)=>a+b,0)/nonzero.length;const consistency=nonzero.length/sample.length;const score=avg*consistency;if(score>bestScore){bestScore=score;best=d;}}
+  }
+  return best.trim();
+}
+function parseCSV(text, delimiter){
+  const rows=[];let row=[],field="",quoted=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(quoted){
+      if(c==='"'&&text[i+1]==='"'){field+='"';i++;}
+      else if(c==='"')quoted=false;
+      else field+=c;
+    }else{
+      if(c==='"'&&field.length===0)quoted=true;
+      else if(c===delimiter){row.push(field);field="";}
+      else if(c==="\n"){row.push(field.replace(/\r$/,""));rows.push(row);row=[];field="";}
+      else field+=c;
+    }
+  }
+  if(field.length||row.length){row.push(field.replace(/\r$/,""));rows.push(row);}
+  while(rows.length && rows[rows.length-1].every(v=>v==="")) rows.pop();
+  return rows;
+}
+const htmlDecoder=document.createElement("textarea");
+function decodeHtmlEntities(value){
+  // Decodifica entidades nomeadas e numéricas (&aacute;, &#128591;...). Até 3 passadas para casos como &amp;aacute;.
+  let v=value;
+  for(let i=0;i<3&&/&(#\d+|#x[0-9a-f]+|[a-z][a-z0-9]*);/i.test(v);i++){
+    const next=v.replace(/&(#\d+|#x[0-9a-f]+|[a-z][a-z0-9]*);/gi,m=>{htmlDecoder.innerHTML=m;return htmlDecoder.value;});
+    if(next===v)break;
+    v=next;
+  }
+  return v;
+}
+function countHtmlEntities(rows){
+  let n=0;const re=/&(#\d+|#x[0-9a-f]+|[a-z][a-z0-9]*);/gi;
+  for(const r of rows)for(const v of r){const m=v.match(re);if(m)n+=m.length;}
+  return n;
+}
+const PHONE_NAME=/tel|fone|phone|celular|whats|mobile/i;
+let headerNames=[];
+function buildPhoneCols(){
+  const box=$("phoneCols"), old={};
+  box.querySelectorAll("input").forEach(i=>old[i.dataset.name]=i.checked);
+  box.innerHTML="";
+  headerNames=sourceRows[0]||[];
+  headerNames.forEach((name,idx)=>{
+    const lab=document.createElement("label"),inp=document.createElement("input");
+    lab.className="chip";
+    inp.type="checkbox";inp.dataset.idx=idx;inp.dataset.name=name;
+    inp.checked=(name in old)?old[name]:PHONE_NAME.test(name);
+    inp.addEventListener("change",render);
+    lab.appendChild(inp);lab.appendChild(document.createTextNode(name||("coluna "+(idx+1))));
+    box.appendChild(lab);
+  });
+  $("phoneColsBox").style.display="block";
+}
+function selectedPhoneCols(){
+  return new Set([...$("phoneCols").querySelectorAll("input:checked")].map(i=>+i.dataset.idx));
+}
+let stats={phones:0,sci:0};
+function stripBrazilCode(v){
+  const s=v.trim();
+  if(!s)return v;
+  if(/^[+-]?\d+([.,]\d+)?e[+-]?\d+$/i.test(s)){stats.sci++;return v;}   // notação científica: não mexe
+  if(!/^\+?[\d\s().-]+$/.test(s))return v;                                // não parece telefone
+  const digits=s.replace(/\D/g,"");
+  if(!(digits.length===12||digits.length===13)||!digits.startsWith("55"))return v;
+  const out=s.replace(/^\+?\s*55[\s.-]*/,"");
+  if(out===s)return v;
+  stats.phones++;
+  return out;
+}
+function cleanValue(value){
+  let v=value.normalize("NFC").replace(/\u00A0|\u202F|\u2007/g," ");
+  v=v.replace(/[\u200B-\u200F\u202A-\u202E\u2060\uFEFF]/g,"");
+  v=v.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g,"");
+  if($("strict").checked){
+    v=Array.from(v).filter(ch=>{
+      if(/\p{Extended_Pictographic}/u.test(ch)) return false;
+      if(/\p{L}/u.test(ch) && !/\p{Script=Latin}/u.test(ch)) return false;
+      return true;
+    }).join("");
+  }
+  if($("trim").checked) v=v.trim();
+  return v;
+}
+function transform(){
+  const ent=$("entities").checked, clean=$("clean").checked, s55=$("strip55").checked;
+  const cols=s55?selectedPhoneCols():new Set();
+  stats={phones:0,sci:0};
+  return sourceRows.map((r,ri)=>r.map((v,ci)=>{
+    if(ent)v=decodeHtmlEntities(v);       // 1º: entidades HTML
+    if(clean)v=cleanValue(v);             // 2º: limpeza de caracteres
+    if($("trim").checked)v=v.trim();
+    if(s55&&ri>0&&cols.has(ci))v=stripBrazilCode(v); // 3º: remover 55 (pula o cabeçalho)
+    return v;
+  }));
+}
+function quoteField(v,sep){
+  v=String(v??"");
+  return (v.includes('"')||v.includes(sep)||/[\r\n]/.test(v))?'"'+v.replace(/"/g,'""')+'"':v;
+}
+function makeCSV(rows,sep){return rows.map(r=>r.map(v=>quoteField(v,sep)).join(sep)).join("\r\n")+"\r\n";}
+function render(){
+  if(!sourceRows)return;
+  const rows=transform(), cols=Math.max(...rows.map(r=>r.length));
+  const head=$("header").checked, table=$("table");table.innerHTML="";
+  const shown=rows.slice(0,9);
+  shown.forEach((r,i)=>{
+    const tr=document.createElement("tr");
+    r.forEach(v=>{const el=document.createElement(i===0&&head?"th":"td");el.textContent=v;tr.appendChild(el);});
+    table.appendChild(tr);
+  });
+  const count=rows.length, cells=rows.reduce((n,r)=>n+r.length,0);
+  $("metrics").innerHTML=`<div class="metric"><b>${count.toLocaleString("pt-BR")}</b><small>Linhas</small></div><div class="metric"><b>${cols}</b><small>Colunas máximas</small></div><div class="metric"><b>${cells.toLocaleString("pt-BR")}</b><small>Campos</small></div><div class="metric"><b>${detectedSep==="\t"?"TAB":detectedSep}</b><small>Separador detectado</small></div>`;
+  $("report").style.display="block";
+  const irregular=rows.filter(r=>r.length!==cols).length;
+  let msg=irregular?`Atenção: ${irregular} linha(s) têm quantidade de colunas diferente da maior linha (${cols}). Verifique a prévia antes de importar.`:"Estrutura consistente: todas as linhas possuem a mesma quantidade de colunas.";
+  if($("entities").checked){const n=countHtmlEntities(sourceRows);if(n)msg+=` ${n.toLocaleString("pt-BR")} código(s) de entidade HTML encontrados e convertidos.`;}
+  if($("strip55").checked)msg+=` Prefixo 55 removido de ${stats.phones.toLocaleString("pt-BR")} telefone(s).`+(stats.sci?` ${stats.sci} valor(es) em notação científica foram ignorados.`:"");
+  $("report").textContent=msg;
+  $("report").className="status "+(irregular?"bad":"good");
+}
+async function loadFile(file){
+  if(!file)return;
+  fileName=file.name.replace(/\.[^.]+$/,"")||"arquivo";
+  const decoded=decode(await file.arrayBuffer());originalText=decoded.text.replace(/^\uFEFF/,"");
+  detectedSep=detectDelimiter(originalText);
+  $("inputSep").value="auto";
+  sourceRows=parseCSV(originalText,detectedSep);
+  if(!sourceRows.length){setStatus("Não foi possível identificar dados no arquivo.","bad");return;}
+  buildPhoneCols();
+  $("convert").disabled=false;$("preview").disabled=false;
+  setStatus(`Arquivo carregado: ${file.name} | Codificação identificada: ${decoded.encoding} | Separador identificado: ${detectedSep==="\t"?"TAB":detectedSep} | ${sourceRows.length} linhas.`, "good");
+  render();
+}
+$("file").addEventListener("change",e=>loadFile(e.target.files[0]));
+$("drop").addEventListener("dragover",e=>{e.preventDefault();$("drop").classList.add("drag");});
+$("drop").addEventListener("dragleave",()=>$("drop").classList.remove("drag"));
+$("drop").addEventListener("drop",e=>{e.preventDefault();$("drop").classList.remove("drag");loadFile(e.dataTransfer.files[0]);});
+
+document.querySelectorAll("#pills .pillbtn").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("#pills .pillbtn").forEach(x=>x.classList.toggle("on",x===b));
+  const f=b.dataset.f;
+  document.querySelectorAll(".check.opt").forEach(c=>{c.hidden=!(f==="all"||c.dataset.cat===f);});
+  $("phoneColsBox").style.visibility=(f==="all"||f==="campos")?"visible":"hidden";
+  $("phoneColsBox").style.height=(f==="all"||f==="campos")?"":"0";
+  $("phoneColsBox").style.overflow=(f==="all"||f==="campos")?"":"hidden";
+}));
+$("preview").addEventListener("click",render);
+["entities","clean","strict","strip55","trim","header"].forEach(id=>$(id).addEventListener("change",render));
+$("inputSep").addEventListener("change",()=>{
+  if(!sourceRows)return;
+  detectedSep=$("inputSep").value==="auto"?detectDelimiter(originalText):$("inputSep").value;
+  sourceRows=parseCSV(originalText,detectedSep);buildPhoneCols();render();
+});
+$("convert").addEventListener("click",()=>{
+  if(!sourceRows)return;
+  const rows=transform(),sep=$("outputSep").value;
+  let csv=makeCSV(rows,sep);
+  if($("encoding").value==="utf8bom")csv="\uFEFF"+csv;
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download=fileName+"_convertido.csv";document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  setStatus(`Conversão concluída. Arquivo gerado: ${a.download}. Confira a importação no sistema de destino.`, "good");
+});
+})();
+</script>
+<script>
+(()=>{const st=document.getElementById("stage");
+function fit(){
+ if(innerWidth<=900){st.style.cssText="";return;}
+ // escala pela altura (base 700px) sem deixar a largura lógica abaixo de 1100px; o palco preenche a janela toda
+ const k=Math.min(innerHeight/700,innerWidth/1100);
+ st.style.width=(innerWidth/k)+"px";st.style.height=(innerHeight/k)+"px";
+ st.style.transform="scale("+k+")";st.style.left="0px";st.style.top="0px";
+}
+addEventListener("resize",fit);fit();})();
+</script>
+</body>
+</html>
